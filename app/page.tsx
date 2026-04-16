@@ -20,7 +20,6 @@ const ShopMarkers = ({ places, onMarkerClick }: { places: any[]; onMarkerClick: 
           strokeColor: "#FFFFFF",
           strokeWeight: 2,
           scale: place.isAdContracted ? 1.8 : 1.3,
-          // 💡 修正箇所1：読み込みタイミングのエラーを防ぐため、シンプルな形式に変更
           anchor: { x: 12, y: 22 } as any
         };
 
@@ -112,9 +111,18 @@ const MapContent = () => {
     }
   };
 
+  // 💡 修正箇所：エラーが起きてもクラッシュせずにアラートを出す安全な書き方
   const handleCheckout = async () => {
     try {
       const res = await fetch('/api/checkout', { method: 'POST' });
+
+      if (!res.ok) {
+        // エラー内容を安全に取得
+        const errorData = await res.json().catch(() => null);
+        alert("決済エラー: " + (errorData?.error || "サーバーで問題が発生しました"));
+        return;
+      }
+
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url; 
@@ -123,7 +131,7 @@ const MapContent = () => {
       }
     } catch (error) {
       console.error(error);
-      alert("エラーが発生しました。");
+      alert("通信エラーが発生しました。");
     }
   };
 
@@ -232,7 +240,6 @@ const MapContent = () => {
               strokeColor: "#FFF",
               strokeWeight: 2,
               scale: 1.8,
-              // 💡 修正箇所2：ここも同様に修正
               anchor: { x: 12, y: 22 } as any
             }}
           />
