@@ -111,13 +111,11 @@ const MapContent = () => {
     }
   };
 
-  // 💡 修正箇所：エラーが起きてもクラッシュせずにアラートを出す安全な書き方
   const handleCheckout = async () => {
     try {
       const res = await fetch('/api/checkout', { method: 'POST' });
 
       if (!res.ok) {
-        // エラー内容を安全に取得
         const errorData = await res.json().catch(() => null);
         alert("決済エラー: " + (errorData?.error || "サーバーで問題が発生しました"));
         return;
@@ -147,8 +145,10 @@ const MapContent = () => {
             { location: pos, radius: 1000, type: 'restaurant' },
             (results: any, status: any) => {
               if (status === 'OK' && results) {
-                const enrichedResults = results.map((r: any, index: number) => ({
-                  ...r,
+                // 💡 修正箇所： `...r` をやめて、必要なデータ（nameとgeometry）だけを抽出します
+                const enrichedResults = results.map((r: any) => ({
+                  name: r.name,
+                  geometry: r.geometry,
                   trendScore: Math.floor(Math.random() * 100),
                   isAdContracted: Math.random() < 0.2, 
                   videoUrl: 'https://cdn.coverr.co/videos/coverr-preparing-pad-thai-1725/1080p.mp4'
