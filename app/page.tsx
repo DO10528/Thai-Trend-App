@@ -20,7 +20,8 @@ const ShopMarkers = ({ places, onMarkerClick }: { places: any[]; onMarkerClick: 
           strokeColor: "#FFFFFF",
           strokeWeight: 2,
           scale: place.isAdContracted ? 1.8 : 1.3,
-          anchor: typeof window !== 'undefined' && (window as any).google ? new (window as any).google.maps.Point(12, 22) : null
+          // 💡 修正箇所1：読み込みタイミングのエラーを防ぐため、シンプルな形式に変更
+          anchor: { x: 12, y: 22 } as any
         };
 
         return (
@@ -111,13 +112,12 @@ const MapContent = () => {
     }
   };
 
-  // 💡 追加：Stripeの決済画面（API）を呼び出す処理
   const handleCheckout = async () => {
     try {
       const res = await fetch('/api/checkout', { method: 'POST' });
       const data = await res.json();
       if (data.url) {
-        window.location.href = data.url; // Stripeの決済画面へリダイレクト
+        window.location.href = data.url; 
       } else {
         alert("決済画面の準備に失敗しました。");
       }
@@ -175,7 +175,6 @@ const MapContent = () => {
                 ログアウト
               </button>
               
-              {/* 💡 修正：onClick={handleCheckout} を追加してボタンを機能させる */}
               <button 
                 onClick={handleCheckout} 
                 className="mt-4 w-full bg-blue-600 text-white font-bold py-3 rounded-xl text-sm shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all transform hover:-translate-y-0.5"
@@ -233,7 +232,8 @@ const MapContent = () => {
               strokeColor: "#FFF",
               strokeWeight: 2,
               scale: 1.8,
-              anchor: typeof window !== 'undefined' && (window as any).google ? new (window as any).google.maps.Point(12, 22) : null
+              // 💡 修正箇所2：ここも同様に修正
+              anchor: { x: 12, y: 22 } as any
             }}
           />
           <ShopMarkers places={places} onMarkerClick={setSelectedPlace} />
