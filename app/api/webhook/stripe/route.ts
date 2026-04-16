@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-03-25.dahlia' as any,
+  apiVersion: '2025-01-27.acacia' as any,
 });
 
 const supabaseAdmin = createClient(
@@ -28,9 +28,15 @@ export async function POST(req: Request) {
     const userEmail = session.customer_details?.email;
 
     if (userEmail) {
+      // 💡 修正：upsertを使用して、既存のプロフィールを更新
       const { error } = await supabaseAdmin
         .from('profiles')
-        .upsert({ id: session.client_reference_id, email: userEmail, is_premium: true }, { onConflict: 'email' });
+        .upsert({ 
+          id: session.client_reference_id || undefined, // IDがあれば使用
+          email: userEmail, 
+          is_premium: true,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'email' });
 
       if (error) console.error('Supabase Error:', error);
       console.log(`🎉 ${userEmail} upgraded!`);

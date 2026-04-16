@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
+// 💡 修正：apiVersionを削除、または 'any' でキャストして型チェックを回避
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  // 💡 エラーの原因だったバージョンを修正
-  apiVersion: '2026-03-25.dahlia' as any,
+  apiVersion: '2025-01-27.acacia' as any, 
 });
 
 export async function POST() {
@@ -24,12 +24,14 @@ export async function POST() {
         },
       ],
       mode: 'payment',
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/?success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/?canceled=true`,
+      // Vercel上のURLかlocalhostかを自動で切り替え
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://' + process.env.VERCEL_URL}/?success=true`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://' + process.env.VERCEL_URL}/?canceled=true`,
     });
 
     return NextResponse.json({ url: session.url });
   } catch (err: any) {
+    console.error('Stripe Error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
