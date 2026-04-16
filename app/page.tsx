@@ -5,27 +5,31 @@ import { APIProvider, Map, Marker, useMapsLibrary, useMap } from '@vis.gl/react-
 import { supabase } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
 
-// --- 鍵チェック用コンポーネント ---
+// 💡 修正ポイント1：お店のデータの「形」を定義する（これで赤線が消えます）
+interface Shop {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  trend_score: number;
+  is_ad_contracted: boolean;
+  video_url?: string;
+  geometry: {
+    location: { lat: number; lng: number };
+  };
+}
+
 const EnvCheck = ({ children }: { children: React.ReactNode }) => {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-  if (!apiKey) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-red-50 p-10 text-center">
-        <div className="max-w-md bg-white p-8 rounded-2xl shadow-xl">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">APIキー設定エラー</h1>
-          <p className="text-gray-600 text-sm">Vercelまたは.env.localの環境変数を確認してください。</p>
-        </div>
-      </div>
-    );
-  }
+  if (!apiKey) return <div className="p-10 text-red-500">API Key Missing</div>;
   return <>{children}</>;
 };
 
-// --- カスタムSVGピン ---
-const ShopMarkers = ({ places, onMarkerClick }: { places: any[]; onMarkerClick: (place: any) => void }) => {
+// 💡 修正ポイント2：any[] ではなく Shop[] を使う
+const ShopMarkers = ({ places, onMarkerClick }: { places: Shop[]; onMarkerClick: (place: Shop) => void }) => {
   return (
     <>
-      {places.map((place, index) => {
+      {places.map((place) => {
         const score = place.trend_score || 0;
         const pinColor = score > 80 ? '#FF4444' : score > 50 ? '#FF9900' : '#4444FF';
         
@@ -41,7 +45,7 @@ const ShopMarkers = ({ places, onMarkerClick }: { places: any[]; onMarkerClick: 
 
         return (
           <Marker 
-            key={place.id || index} 
+            key={place.id} 
             position={place.geometry.location} 
             title={place.name}
             icon={svgIcon}
@@ -53,8 +57,7 @@ const ShopMarkers = ({ places, onMarkerClick }: { places: any[]; onMarkerClick: 
   );
 };
 
-// --- 動画モーダル ---
-const VideoModal = ({ place, onClose }: { place: any; onClose: () => void }) => {
+const VideoModal = ({ place, onClose }: { place: Shop | null; onClose: () => void }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   useEffect(() => { if (videoRef.current) videoRef.current.play().catch(() => {}); }, [place]);
   if (!place || !place.is_ad_contracted) return null;
@@ -63,38 +66,25 @@ const VideoModal = ({ place, onClose }: { place: any; onClose: () => void }) => 
     <div className="absolute inset-0 bg-black/80 z-50 flex items-center justify-center backdrop-blur-sm p-4 text-white" onClick={onClose}>
       <div className="relative w-full max-w-[320px] aspect-[9/16] bg-black rounded-3xl overflow-hidden shadow-2xl border-4 border-white/20" onClick={(e) => e.stopPropagation()}>
         <video ref={videoRef} src={place.video_url} className="w-full h-full object-cover" loop playsInline controls />
-        <div className="absolute bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-black/80 to-transparent">
-          <h3 className="text-xl font-black">{place.name}</h3>
-          <p className="text-xs text-gray-300">Trend Score: {place.trend_score}%</p>
-        </div>
         <button onClick={onClose} className="absolute top-4 right-4 bg-white/20 text-white p-2 rounded-full">✕</button>
       </div>
     </div>
   );
 };
 
-// --- メインコンテンツ ---
 const MapContent = () => {
   const [myLocation, setMyLocation] = useState({ lat: 13.7468, lng: 100.5328 });
-  const [places, setPlaces] = useState<any[]>([]);
-  const [selectedPlace, setSelectedPlace] = useState<any>(null);
+  const [places, setPlaces] = useState<Shop[]>([]); // 💡 ここも Shop[] に
+  const [selectedPlace, setSelectedPlace] = useState<Shop | null>(null);
   const [user, setUser] = useState<User | null>(null);
 
   const map = useMap();
 
-  // 1. Supabaseからデータを読み込む関数
-  const fetchSupabaseShops = async () => {
-    const { data, error } = await supabase
-      .from('shops')
-      .select('*');
-    
-    if (error) {
-      console.error('Supabase Error:', error);
-      return [];
-    }
+  const fetchSupabaseShops = async (): Promise<Shop[]> => {
+    const { data, error } = await supabase.from('shops').select('*');
+    if (error || !data) return [];
 
-    // Google Mapsの形式に合わせてデータを変換
-    return data.map(shop => ({
+    return data.map((shop: any) => ({
       ...shop,
       geometry: {
         location: { lat: shop.latitude, lng: shop.longitude }
@@ -108,25 +98,17 @@ const MapContent = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleLogin = async () => {
-    const email = window.prompt("Emailを入力してください");
-    if (email) await supabase.auth.signInWithOtp({ email });
-  };
-
   const handleCheckout = async () => {
     const res = await fetch('/api/checkout', { method: 'POST' });
     const data = await res.json();
     if (data.url) window.location.href = data.url;
   };
 
-  // 2. ページ読み込み時にデータを取得
   useEffect(() => {
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(async (position) => {
         const pos = { lat: position.coords.latitude, lng: position.coords.longitude };
         setMyLocation(pos);
-
-        // Supabaseから本物のデータを取得
         const supabaseShops = await fetchSupabaseShops();
         setPlaces(supabaseShops);
       });
@@ -149,11 +131,14 @@ const MapContent = () => {
             <button onClick={handleCheckout} className="mt-4 w-full bg-blue-600 text-white font-bold py-3 rounded-xl text-sm">✨ プレミアム会員</button>
           </div>
         ) : (
-          <button onClick={handleLogin} className="mt-5 w-full bg-black text-white font-bold py-3 rounded-xl text-sm">ログイン</button>
+          <button onClick={() => {
+            const email = window.prompt("Emailを入力してください");
+            if (email) supabase.auth.signInWithOtp({ email });
+          }} className="mt-5 w-full bg-black text-white font-bold py-3 rounded-xl text-sm">ログイン</button>
         )}
         <div className="mt-8 space-y-4">
           {rankedPlaces.map((place, i) => (
-            <div key={i} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer ${place.is_ad_contracted ? 'bg-red-50 border-red-200' : 'border-transparent'}`} onClick={() => setSelectedPlace(place)}>
+            <div key={place.id} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer ${place.is_ad_contracted ? 'bg-red-50 border-red-200' : 'border-transparent'}`} onClick={() => setSelectedPlace(place)}>
               <span className={`text-lg font-black ${i < 3 ? 'text-red-500' : 'text-gray-400'}`}>{i + 1}</span>
               <div className="flex-1">
                 <div className="font-bold text-sm truncate w-36">{place.name}</div>
