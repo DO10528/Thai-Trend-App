@@ -127,9 +127,14 @@ const MapContent = () => {
 
   const map = useMap();
 
-  const fetchSupabaseShops = async (): Promise<Shop[]> => {
+  const fetchSupabaseShops = async (query?: string): Promise<Shop[]> => {
     try {
-      const { data, error } = await supabase.from('shops').select('*');
+      let sbQuery = supabase.from('shops').select('*');
+      if (query && query.trim()) {
+        const q = `%${query.trim()}%`;
+        sbQuery = sbQuery.or(`name.ilike.${q},description.ilike.${q},category.ilike.${q},tags.ilike.${q}`);
+      }
+      const { data, error } = await sbQuery;
       if (error) throw new Error(error.message);
       if (!data) return [];
   
@@ -153,6 +158,13 @@ const MapContent = () => {
       return [];
     }
   };
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      fetchSupabaseShops(searchQuery).then(setPlaces);
+    }, 400);
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
@@ -180,44 +192,31 @@ const MapContent = () => {
   useEffect(() => {
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const pos = { lat: position.coords.latitude, lng: position.coords.longitude };
-          setMyLocation(pos);
-          const supabaseShops = await fetchSupabaseShops();
-          setPlaces(supabaseShops);
+        (position) => {
+          setMyLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
         },
-        async () => {
-          const supabaseShops = await fetchSupabaseShops();
-          setPlaces(supabaseShops);
-        }
+        () => console.warn('Geolocation failed or blocked.')
       );
-    } else {
-      fetchSupabaseShops().then(setPlaces);
     }
   }, []);
 
-  // --- Realtime Search & Ranking Algorithm ---
+  // --- Realtime Ranking Algorithm ---
   const rankedPlaces = useMemo(() => {
-    let filtered = places;
-    
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      filtered = filtered.filter(p => {
-        const fullText = `${p.name} ${p.description || ''} ${p.category || ''} ${p.tags || ''}`.toLowerCase();
-        return fullText.includes(q);
-      });
-    }
-
-    const ranked = filtered.map(place => {
+    const ranked = places.map(place => {
       const distanceKm = getDistanceInKm(myLocation.lat, myLocation.lng, place.latitude, place.longitude);
-      const distancePenalty = distanceKm * 2; 
+      const distancePenalty = distanceKm * 0.5; // Soft penalty
       const finalScore = Math.max(0, (place.trend_score || 0) - distancePenalty);
 
       return { ...place, distanceKm, finalScore };
     });
 
-    return ranked.sort((a, b) => b.finalScore - a.finalScore);
-  }, [places, searchQuery, myLocation]);
+    return ranked.sort((a, b) => {
+      if (Math.floor(b.finalScore) !== Math.floor(a.finalScore)) {
+        return b.finalScore - a.finalScore; // Sort by calculated score
+      }
+      return a.distanceKm - b.distanceKm; // Tie-breaker: Closer spots first
+    });
+  }, [places, myLocation]);
 
   return (
     <div className="flex flex-col h-[100dvh] w-full relative overflow-hidden bg-black text-white">
@@ -256,8 +255,7 @@ const MapContent = () => {
             center={myLocation} 
             defaultZoom={14} 
             gestureHandling={'greedy'}
-            disableDefaultUI={true}
-            styles={darkMapStyle}
+            disableDefaultUI={false}
           >
             {/* User Location Pulsing Dot */}
             <AdvancedMarker position={myLocation}>

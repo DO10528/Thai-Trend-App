@@ -15,10 +15,16 @@ export type EnvKey = keyof typeof env;
  * 画面を白くしないため、例外は投げずに空文字を返します。
  */
 export function requireEnv(key: EnvKey): string {
-  const value = env[key];
+  let value = env[key];
   if (!value) {
     console.error(`[Env Error] Required environment variable is missing: ${key}`);
     return '';
   }
-  return value;
+  
+  // Sanitize incorrect Vercel pasting (e.g. "NEXT_PUBLIC_URL=https...")
+  if (value.startsWith(`${key}=`)) {
+    value = value.replace(`${key}=`, '');
+  }
+  
+  return value.trim();
 }
