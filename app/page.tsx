@@ -332,10 +332,18 @@ const MapContent = () => {
             styles={darkMapStyle}
           >
             {/* User Location Pulsing Dot */}
-            <Marker position={myLocation} >
-              <div className="w-5 h-5 bg-neon-cyan rounded-full border-2 border-white shadow-[0_0_15px_rgba(0,240,255,0.8)] animate-ping absolute -translate-x-1/2 -translate-y-1/2"></div>
-              <div className="w-3 h-3 bg-white rounded-full absolute -translate-x-1/2 -translate-y-1/2 left-1/2 top-1/2 z-10 transition-transform hover:scale-125"></div>
-            </Marker>
+            <Marker 
+              position={myLocation} 
+              icon={{
+                path: "M 0, 0 m -8, 0 a 8,8 0 1,0 16,0 a 8,8 0 1,0 -16,0",
+                fillColor: '#00F0FF',
+                fillOpacity: 1,
+                strokeColor: '#FFFFFF',
+                strokeWeight: 2,
+                scale: 1,
+                anchor: typeof google !== 'undefined' ? new google.maps.Point(0, 0) : undefined,
+              }}
+            />
 
             <ShopMarkers places={places} onMarkerClick={setSelectedPlace} />
           </Map>
