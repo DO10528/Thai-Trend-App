@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef, ReactNode } from 'react';
-import { APIProvider, Map, Marker, useMap } from '@vis.gl/react-google-maps';
+import { APIProvider, Map, AdvancedMarker, Pin, useMap } from '@vis.gl/react-google-maps';
 import { supabase } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
 import Sidebar, { Shop, RankedShop } from '@/components/Sidebar';
@@ -251,6 +251,7 @@ const MapContent = () => {
         {/* Right Panel: Map Container */}
         <div className="flex-1 relative order-1 md:order-2 h-[55vh] md:h-full bg-black">
           <Map 
+            mapId="ce6b9f4a0c8b3"
             style={{ width: '100%', height: '100%' }} 
             center={myLocation} 
             defaultZoom={14} 
@@ -259,18 +260,9 @@ const MapContent = () => {
             styles={darkMapStyle}
           >
             {/* User Location Pulsing Dot */}
-            <Marker 
-              position={myLocation} 
-              icon={{
-                path: "M 0, 0 m -8, 0 a 8,8 0 1,0 16,0 a 8,8 0 1,0 -16,0",
-                fillColor: '#00F0FF',
-                fillOpacity: 1,
-                strokeColor: '#FFFFFF',
-                strokeWeight: 2,
-                scale: 1,
-                anchor: { x: 0, y: 0 } as any,
-              }}
-            />
+            <AdvancedMarker position={myLocation}>
+              <div className="w-4 h-4 rounded-full bg-neon-cyan animate-pulse border-2 border-white shadow-[0_0_10px_#00F0FF]"></div>
+            </AdvancedMarker>
 
             <ShopMarkers places={rankedPlaces} onMarkerClick={setSelectedPlace} />
           </Map>
