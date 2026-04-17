@@ -268,7 +268,7 @@ const MapContent = () => {
                 strokeColor: '#FFFFFF',
                 strokeWeight: 2,
                 scale: 1,
-                anchor: typeof google !== 'undefined' ? new google.maps.Point(0, 0) : undefined,
+                anchor: { x: 0, y: 0 } as any,
               }}
             />
 
