@@ -57,26 +57,17 @@ const ShopMarkers = ({ places, onMarkerClick }: { places: RankedShop[]; onMarker
       {places.map((place) => {
         const score = place.finalScore || 0;
         const pinColor = score > 70 ? '#FF2A85' : score > 40 ? '#B026FF' : '#00F0FF';
-        const scale = place.is_ad_contracted ? 1.8 : 1.3;
-
-        const svgIcon = {
-          path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
-          fillColor: pinColor,
-          fillOpacity: 1,
-          strokeColor: "#FFFFFF",
-          strokeWeight: 1.5,
-          scale: scale,
-          anchor: { x: 12, y: 22 } as any
-        };
+        const scale = place.is_ad_contracted ? 1.5 : 1.1;
 
         return (
-          <Marker 
+          <AdvancedMarker 
             key={place.id} 
             position={place.geometry.location} 
             title={place.name}
-            icon={svgIcon}
             onClick={() => onMarkerClick(place)}
-          />
+          >
+            <Pin background={pinColor} borderColor="#FFFFFF" glyphColor="#FFFFFF" scale={scale} />
+          </AdvancedMarker>
         );
       })}
     </>
