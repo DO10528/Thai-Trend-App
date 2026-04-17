@@ -1,12 +1,20 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { requireEnv } from '@/lib/env';
 
-// 💡 修正：apiVersionを削除、または 'any' でキャストして型チェックを回避
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-01-27.acacia' as any, 
-});
+const stripeSecretKey = requireEnv('STRIPE_SECRET_KEY');
+const baseUrl = requireEnv('NEXT_PUBLIC_BASE_URL');
+
+// Only instantiate Stripe if the key is available
+const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, {
+  apiVersion: '2025-01-27.acacia' as any,
+}) : null;
 
 export async function POST() {
+  if (!stripe) {
+    return NextResponse.json({ error: 'Stripe configuration is missing' }, { status: 500 });
+  }
+
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -18,20 +26,19 @@ export async function POST() {
               name: 'Premium Plan (1 Month)',
               description: 'SNS Trend Map Premium Access',
             },
-            unit_amount: 2000, // 20 THB
+            unit_amount: 2000, // 20 THB => 2000 satangs
           },
           quantity: 1,
         },
       ],
       mode: 'payment',
-      // Vercel上のURLかlocalhostかを自動で切り替え
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://' + process.env.VERCEL_URL}/?success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://' + process.env.VERCEL_URL}/?canceled=true`,
+      success_url: `${baseUrl}/?success=true`,
+      cancel_url: `${baseUrl}/?canceled=true`,
     });
 
     return NextResponse.json({ url: session.url });
-  } catch (err: any) {
-    console.error('Stripe Error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown payment error occurred';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
