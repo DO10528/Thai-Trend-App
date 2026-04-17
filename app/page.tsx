@@ -66,7 +66,7 @@ const ShopMarkers = ({ places, onMarkerClick }: { places: RankedShop[]; onMarker
           strokeColor: "#FFFFFF",
           strokeWeight: 1.5,
           scale: scale,
-          anchor: typeof google !== 'undefined' ? new google.maps.Point(12, 22) : undefined
+          anchor: { x: 12, y: 22 } as any
         };
 
         return (
