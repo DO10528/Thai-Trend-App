@@ -1,0 +1,11 @@
+id,name,description,category,tags,latitude,longitude,trend_score,is_ad_contracted
+b1b1b1b1-b1b1-4b1b-b1b1-b1b1b1b1b1b1,Som Tum Jay So,Authentic and spicy papaya salad with grilled chicken.,Isan Food,"Som Tum, Spicy, Isan, Street Food",13.7274,100.5226,95,FALSE
+b2b2b2b2-b2b2-4b2b-b2b2-b2b2b2b2b2b2,Phed Mark,Extremely spicy and rich Pad Krapow.,Street Food,"Spicy, Krapow, Thai Basil",13.7198,100.5833,92,TRUE
+b3b3b3b3-b3b3-4b3b-b3b3-b3b3b3b3b3b3,Baan Somtum (Sathorn),Comfortable restaurant serving premium Isan dishes.,Restaurant,"Som Tum, Fried Chicken, Isan",13.7196,100.5212,88,FALSE
+b4b4b4b4-b4b4-4b4b-b4b4-b4b4b4b4b4b4,Jay Fai,Michelin starred crab omelette and drunken noodles.,Seafood,"Michelin, Seafood, Noodles",13.7526,100.5048,99,TRUE
+b5b5b5b5-b5b5-4b5b-b5b5-b5b5b5b5b5b5,Thip Samai Pad Thai,Famous historic Pad Thai wrapped in egg.,Street Food,"Pad Thai, Noodles, Historic",13.7527,100.5048,85,FALSE
+b6b6b6b6-b6b6-4b6b-b6b6-b6b6b6b6b6b6,Polo Fried Chicken,Signature fried chicken topped with crispy garlic.,Thai Food,"Fried Chicken, Garlic, Isan",13.7335,100.5452,89,FALSE
+b7b7b7b7-b7b7-4b7b-b7b7-b7b7b7b7b7b7,Here Hai,Famous crab fried rice in Ekkamai.,Seafood,"Crab, Fried Rice, Ekkamai",13.7275,100.5861,91,TRUE
+b8b8b8b8-b8b8-4b8b-b8b8-b8b8b8b8b8b8,Nai Mong Hoi Tod,Crispy oyster omelette cooked over charcoal.,Street Food,"Oyster, Chinese, Street Food",13.7410,100.5100,82,FALSE
+b9b9b9b9-b9b9-4b9b-b9b9-b9b9b9b9b9b9,Som Tum Der,Award-winning Isan cuisine near Silom.,Isan Food,"Som Tum, Isan, Silom",13.7289,100.5332,87,FALSE
+c0c0c0c0-c0c0-4c0c-c0c0-c0c0c0c0c0c0,Mae Varee Mango Sticky Rice,The best mango sticky rice available 24/7.,Dessert,"Dessert, Mango, Sweets",13.7245,100.5796,96,FALSE
