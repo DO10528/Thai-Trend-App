@@ -22,12 +22,12 @@ function getDistanceInKm(lat1: number, lon1: number, lat2: number, lon2: number)
 // --- Components ---
 const EnvCheck = ({ children }: { children: ReactNode }) => {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-  if (!apiKey) {
+  if (!apiKey || apiKey === 'YOUR_API_KEY' || apiKey.length < 20) {
     return (
       <div className="flex h-screen items-center justify-center bg-black text-neon-pink">
         <div className="glass-panel p-8 text-center rounded-2xl neon-border-pink">
-          <h1 className="text-2xl font-black mb-2 animate-pulse">API KEY MISSING</h1>
-          <p className="text-sm opacity-80">Please check your environment variables.</p>
+          <h1 className="text-2xl font-black mb-2 animate-pulse">API KEY MISSING OR INVALID</h1>
+          <p className="text-sm opacity-80">Please check your NEXT_PUBLIC_GOOGLE_MAPS_API_KEY.</p>
         </div>
       </div>
     );
@@ -116,19 +116,24 @@ const Directions = ({ origin, destination, travelMode, setTravelMode }: {
 
   useEffect(() => {
     if (!directionsService || !directionsRenderer || !destination) {
-      if (directionsRenderer) directionsRenderer.setDirections(null);
+      if (directionsRenderer) directionsRenderer.setMap(null);
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setRouteInfo(null);
       return;
     }
+
+    directionsRenderer.setMap(map);
 
     directionsService.route({
       origin,
       destination,
       travelMode: travelMode,
     }).then(response => {
+      if (!response || !response.routes || response.routes.length === 0) {
+        throw new Error('No route found');
+      }
       directionsRenderer.setDirections(response);
-      const leg = response.routes[0]?.legs[0];
+      const leg = response.routes[0]?.legs?.[0];
       if (leg) {
         setRouteInfo({
           distance: leg.distance?.text || '',
@@ -137,9 +142,10 @@ const Directions = ({ origin, destination, travelMode, setTravelMode }: {
       }
     }).catch(e => {
       console.error('Directions request failed', e);
+      directionsRenderer.setMap(null);
       setRouteInfo(null);
     });
-  }, [directionsService, directionsRenderer, origin, destination, travelMode]);
+  }, [directionsService, directionsRenderer, origin, destination, travelMode, map]);
 
   if (!destination || !routeInfo) return null;
 
@@ -188,18 +194,18 @@ const MapContent = () => {
       if (!data) return [];
   
       return data.map((shop) => ({
-        id: Array.isArray(shop.id) ? shop.id[0] : (shop.id as string),
-        name: shop.name || 'Unknown',
-        description: shop.description || '',
-        category: shop.category || '',
-        tags: shop.tags || '',
-        latitude: parseFloat(shop.latitude) || 0,
-        longitude: parseFloat(shop.longitude) || 0,
-        trend_score: shop.trend_score || 0,
-        is_ad_contracted: !!shop.is_ad_contracted,
-        video_url: shop.video_url || '',
+        id: Array.isArray(shop?.id) ? shop.id[0] : (shop?.id as string),
+        name: shop?.name || 'Unknown',
+        description: shop?.description || '',
+        category: shop?.category || '',
+        tags: shop?.tags || '',
+        latitude: parseFloat(shop?.latitude) || 0,
+        longitude: parseFloat(shop?.longitude) || 0,
+        trend_score: shop?.trend_score || 0,
+        is_ad_contracted: !!shop?.is_ad_contracted,
+        video_url: shop?.video_url || '',
         geometry: {
-          location: { lat: parseFloat(shop.latitude), lng: parseFloat(shop.longitude) }
+          location: { lat: parseFloat(shop?.latitude) || 0, lng: parseFloat(shop?.longitude) || 0 }
         }
       }));
     } catch (err: unknown) {
@@ -340,7 +346,22 @@ const MapContent = () => {
 };
 
 export default function Home() {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string;
+
+  if (!isMounted) {
+    return (
+      <main className="h-[100dvh] w-full bg-black flex items-center justify-center text-white">
+        <div className="animate-pulse text-neon-cyan font-bold tracking-widest text-xl">INITIALIZING SECURE LINK...</div>
+      </main>
+    );
+  }
+
   return (
     <main className="h-[100dvh] w-full relative text-white bg-black">
       <EnvCheck>
