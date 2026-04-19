@@ -21,10 +21,33 @@ export interface RankedShop extends Shop {
   finalScore: number;
 }
 
+export const PROVINCES = [
+  { name: 'Bangkok', lat: 13.7563, lng: 100.5018 },
+  { name: 'Chiang Mai', lat: 18.7883, lng: 98.9853 },
+  { name: 'Phuket', lat: 7.8804, lng: 98.3923 },
+  { name: 'Pattaya', lat: 12.9236, lng: 100.8825 },
+  { name: 'Khon Kaen', lat: 16.4322, lng: 102.8236 },
+];
+
+export const CATEGORIES = [
+  'All',
+  'Restaurant',
+  'Cafe',
+  'Hotel',
+  'Gas Station',
+  'Street Food',
+  'Seafood',
+  'Dessert',
+];
+
 interface SidebarProps {
   user: User | null;
   searchQuery: string;
   setSearchQuery: (val: string) => void;
+  selectedCategory: string;
+  setSelectedCategory: (val: string) => void;
+  selectedProvince: string;
+  setSelectedProvince: (val: string) => void;
   rankedPlaces: RankedShop[];
   selectedPlace: RankedShop | null;
   handleCheckout: () => void;
@@ -37,6 +60,10 @@ export default function Sidebar({
   user,
   searchQuery,
   setSearchQuery,
+  selectedCategory,
+  setSelectedCategory,
+  selectedProvince,
+  setSelectedProvince,
   rankedPlaces,
   selectedPlace,
   handleCheckout,
@@ -69,7 +96,7 @@ export default function Sidebar({
         </div>
 
         {/* Neon Cyber Search Bar */}
-        <div className="mb-6 relative group">
+        <div className="mb-4 relative group">
           <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
              <span className="text-neon-cyan/50 group-focus-within:text-neon-cyan transition-colors">🔍</span>
           </div>
@@ -80,6 +107,35 @@ export default function Sidebar({
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-black/40 border border-white/10 text-white pl-12 pr-4 py-3.5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-neon-cyan focus:border-transparent transition-all shadow-inner placeholder:text-white/30 text-sm font-medium"
           />
+        </div>
+
+        {/* Filters */}
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2 custom-scrollbar">
+          <select 
+            value={selectedProvince}
+            onChange={(e) => setSelectedProvince(e.target.value)}
+            className="bg-black/40 border border-white/10 text-white px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-neon-cyan text-sm min-w-[120px]"
+          >
+            <option value="">Select Area</option>
+            {PROVINCES.map(p => (
+              <option key={p.name} value={p.name}>{p.name}</option>
+            ))}
+          </select>
+          <div className="flex gap-2">
+            {CATEGORIES.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat === 'All' ? '' : cat)}
+                className={`whitespace-nowrap px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                  (cat === 'All' && !selectedCategory) || selectedCategory === cat
+                    ? 'bg-neon-cyan text-black shadow-[0_0_10px_rgba(0,240,255,0.4)]'
+                    : 'bg-black/40 border border-white/10 text-white hover:bg-white/10'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Auth Section */}

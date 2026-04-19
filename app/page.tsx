@@ -115,15 +115,23 @@ const MapContent = () => {
   const [user, setUser] = useState<User | null>(null);
   const [errorToast, setErrorToast] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedProvince, setSelectedProvince] = useState('');
 
   const map = useMap();
 
-  const fetchSupabaseShops = async (query?: string): Promise<Shop[]> => {
+  const fetchSupabaseShops = async (query?: string, categoryFilter?: string): Promise<Shop[]> => {
     try {
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+        throw new Error('Supabase Configuration Missing');
+      }
       let sbQuery = supabase.from('shops').select('*');
       if (query && query.trim()) {
         const q = `%${query.trim()}%`;
-        sbQuery = sbQuery.or(`name.ilike.${q},description.ilike.${q},category.ilike.${q},tags.ilike.${q}`);
+        sbQuery = sbQuery.or(`name.ilike.${q},category.ilike.${q},tags.ilike.${q}`);
+      }
+      if (categoryFilter) {
+        sbQuery = sbQuery.eq('category', categoryFilter);
       }
       const { data, error } = await sbQuery;
       if (error) throw new Error(error.message);
@@ -152,10 +160,10 @@ const MapContent = () => {
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      fetchSupabaseShops(searchQuery).then(setPlaces);
+      fetchSupabaseShops(searchQuery, selectedCategory).then(setPlaces);
     }, 400);
     return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery]);
+  }, [searchQuery, selectedCategory]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
