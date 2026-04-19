@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef, ReactNode } from 'react';
-import { APIProvider, Map, AdvancedMarker, Pin, useMap } from '@vis.gl/react-google-maps';
+import { APIProvider, Map, AdvancedMarker, Pin, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
 import { supabase } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
 import Sidebar, { Shop, RankedShop, PROVINCES } from '@/components/Sidebar';
@@ -35,13 +35,14 @@ const EnvCheck = ({ children }: { children: ReactNode }) => {
   return <>{children}</>;
 };
 
-const ShopMarkers = ({ places, onMarkerClick }: { places: RankedShop[]; onMarkerClick: (place: RankedShop) => void }) => {
+const ShopMarkers = ({ places, selectedPlace, onMarkerClick }: { places: RankedShop[]; selectedPlace: RankedShop | null; onMarkerClick: (place: RankedShop) => void }) => {
   return (
     <>
       {places.map((place) => {
         const score = place.finalScore || 0;
         const pinColor = score > 70 ? '#FF2A85' : score > 40 ? '#B026FF' : '#00F0FF';
-        const scale = place.is_ad_contracted ? 1.5 : 1.1;
+        const isSelected = selectedPlace?.id === place.id;
+        const scale = isSelected ? 1.8 : (place.is_ad_contracted ? 1.5 : 1.1);
 
         return (
           <AdvancedMarker 
@@ -49,8 +50,9 @@ const ShopMarkers = ({ places, onMarkerClick }: { places: RankedShop[]; onMarker
             position={place.geometry.location} 
             title={place.name}
             onClick={() => onMarkerClick(place)}
+            zIndex={isSelected ? 1000 : 1}
           >
-            <Pin background={pinColor} borderColor="#FFFFFF" glyphColor="#FFFFFF" scale={scale} />
+            <Pin background={pinColor} borderColor={isSelected ? "#FFD700" : "#FFFFFF"} glyphColor="#FFFFFF" scale={scale} />
           </AdvancedMarker>
         );
       })}
@@ -88,6 +90,56 @@ const VideoModal = ({ place, onClose }: { place: Shop | null; onClose: () => voi
           ✕
         </button>
       </div>
+    </div>
+  );
+};
+
+const Directions = ({ origin, destination, travelMode }: { origin: { lat: number, lng: number }, destination: { lat: number, lng: number } | null, travelMode: google.maps.TravelMode }) => {
+  const map = useMap();
+  const routesLibrary = useMapsLibrary('routes');
+  const [directionsService, setDirectionsService] = useState<google.maps.DirectionsService>();
+  const [directionsRenderer, setDirectionsRenderer] = useState<google.maps.DirectionsRenderer>();
+  const [routeInfo, setRouteInfo] = useState<{ distance: string, duration: string } | null>(null);
+
+  useEffect(() => {
+    if (!routesLibrary || !map) return;
+    setDirectionsService(new routesLibrary.DirectionsService());
+    setDirectionsRenderer(new routesLibrary.DirectionsRenderer({ map, suppressMarkers: true }));
+  }, [routesLibrary, map]);
+
+  useEffect(() => {
+    if (!directionsService || !directionsRenderer || !destination) {
+      if (directionsRenderer) directionsRenderer.setDirections(null);
+      setRouteInfo(null);
+      return;
+    }
+
+    directionsService.route({
+      origin,
+      destination,
+      travelMode: travelMode,
+    }).then(response => {
+      directionsRenderer.setDirections(response);
+      const leg = response.routes[0]?.legs[0];
+      if (leg) {
+        setRouteInfo({
+          distance: leg.distance?.text || '',
+          duration: leg.duration?.text || ''
+        });
+      }
+    }).catch(e => {
+      console.error('Directions request failed', e);
+      setRouteInfo(null);
+    });
+  }, [directionsService, directionsRenderer, origin, destination, travelMode]);
+
+  if (!destination || !routeInfo) return null;
+
+  return (
+    <div className="absolute top-4 right-4 bg-white text-black p-4 rounded-xl shadow-lg z-10 border border-gray-200">
+      <h3 className="font-bold text-sm mb-1">Route Info</h3>
+      <p className="text-xs">Distance: {routeInfo.distance}</p>
+      <p className="text-xs">Duration: {routeInfo.duration}</p>
     </div>
   );
 };
@@ -256,7 +308,7 @@ const MapContent = () => {
               <div className="w-4 h-4 rounded-full bg-neon-cyan animate-pulse border-2 border-white shadow-[0_0_10px_#00F0FF]"></div>
             </AdvancedMarker>
 
-            <ShopMarkers places={rankedPlaces} onMarkerClick={setSelectedPlace} />
+            <ShopMarkers places={rankedPlaces} selectedPlace={selectedPlace} onMarkerClick={setSelectedPlace} />
           </Map>
 
           <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black/80 to-transparent md:hidden pointer-events-none"></div>
