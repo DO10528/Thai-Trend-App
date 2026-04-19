@@ -4,23 +4,7 @@ import { useState, useEffect, useMemo, useRef, ReactNode } from 'react';
 import { APIProvider, Map, AdvancedMarker, Pin, useMap } from '@vis.gl/react-google-maps';
 import { supabase } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
-import Sidebar, { Shop, RankedShop } from '@/components/Sidebar';
-
-// --- Map Styling (Cyberpunk Dark) ---
-const darkMapStyle = [
-  { elementType: "geometry", stylers: [{ color: "#0A0A0F" }] },
-  { elementType: "labels.text.fill", stylers: [{ color: "#00F0FF" }] },
-  { elementType: "labels.text.stroke", stylers: [{ color: "#0A0A0F" }, { weight: 2 }] },
-  { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#B026FF" }] },
-  { featureType: "poi", elementType: "labels.text.fill", stylers: [{ color: "#FFFFFF" }] },
-  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#0D1A1A" }] },
-  { featureType: "road", elementType: "geometry", stylers: [{ color: "#222" }] },
-  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#333" }] },
-  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#FF2A85" }, { lightness: -40 }] },
-  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#FF2A85" }, { lightness: -60 }] },
-  { featureType: "transit", elementType: "geometry", stylers: [{ color: "#111" }] },
-  { featureType: "water", elementType: "geometry", stylers: [{ color: "#00050A" }] },
-];
+import Sidebar, { Shop, RankedShop, PROVINCES } from '@/components/Sidebar';
 
 // --- Utilities ---
 function getDistanceInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -235,6 +219,17 @@ const MapContent = () => {
           user={user}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
+          selectedCategory={selectedCategory}
+          setSelectedCategory={setSelectedCategory}
+          selectedProvince={selectedProvince}
+          setSelectedProvince={(provName) => {
+            setSelectedProvince(provName);
+            const prov = PROVINCES.find(p => p.name === provName);
+            if (prov && map) {
+              map.panTo({ lat: prov.lat, lng: prov.lng });
+              map.setZoom(12);
+            }
+          }}
           rankedPlaces={rankedPlaces}
           selectedPlace={selectedPlace}
           handleCheckout={handleCheckout}
@@ -247,9 +242,9 @@ const MapContent = () => {
         />
 
         {/* Right Panel: Map Container */}
-        <div className="flex-1 relative order-1 md:order-2 h-[55vh] md:h-full bg-black">
+        <div className="flex-1 relative order-1 md:order-2 h-[55vh] md:h-full bg-white">
           <Map 
-            mapId="ce6b9f4a0c8b3"
+            mapId="DEMO_MAP_ID"
             style={{ width: '100%', height: '100%' }} 
             center={myLocation} 
             defaultZoom={14} 
