@@ -94,7 +94,12 @@ const VideoModal = ({ place, onClose }: { place: Shop | null; onClose: () => voi
   );
 };
 
-const Directions = ({ origin, destination, travelMode }: { origin: { lat: number, lng: number }, destination: { lat: number, lng: number } | null, travelMode: google.maps.TravelMode }) => {
+const Directions = ({ origin, destination, travelMode, setTravelMode }: { 
+  origin: { lat: number, lng: number }, 
+  destination: { lat: number, lng: number } | null, 
+  travelMode: 'BICYCLING' | 'DRIVING' | 'TRANSIT' | 'TWO_WHEELER' | 'WALKING',
+  setTravelMode: (mode: 'BICYCLING' | 'DRIVING' | 'TRANSIT' | 'TWO_WHEELER' | 'WALKING') => void
+}) => {
   const map = useMap();
   const routesLibrary = useMapsLibrary('routes');
   const [directionsService, setDirectionsService] = useState<google.maps.DirectionsService>();
@@ -103,13 +108,16 @@ const Directions = ({ origin, destination, travelMode }: { origin: { lat: number
 
   useEffect(() => {
     if (!routesLibrary || !map) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDirectionsService(new routesLibrary.DirectionsService());
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDirectionsRenderer(new routesLibrary.DirectionsRenderer({ map, suppressMarkers: true }));
   }, [routesLibrary, map]);
 
   useEffect(() => {
     if (!directionsService || !directionsRenderer || !destination) {
       if (directionsRenderer) directionsRenderer.setDirections(null);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRouteInfo(null);
       return;
     }
@@ -137,7 +145,12 @@ const Directions = ({ origin, destination, travelMode }: { origin: { lat: number
 
   return (
     <div className="absolute top-4 right-4 bg-white text-black p-4 rounded-xl shadow-lg z-10 border border-gray-200">
-      <h3 className="font-bold text-sm mb-1">Route Info</h3>
+      <h3 className="font-bold text-sm mb-2">Route Info</h3>
+      <div className="flex gap-2 mb-2">
+        <button onClick={() => setTravelMode('DRIVING')} className={`px-2 py-1 text-xs rounded ${travelMode === 'DRIVING' ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}>🚗 Car</button>
+        <button onClick={() => setTravelMode('BICYCLING')} className={`px-2 py-1 text-xs rounded ${travelMode === 'BICYCLING' ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}>🏍️ Bike</button>
+        <button onClick={() => setTravelMode('WALKING')} className={`px-2 py-1 text-xs rounded ${travelMode === 'WALKING' ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}>🚶 Walk</button>
+      </div>
       <p className="text-xs">Distance: {routeInfo.distance}</p>
       <p className="text-xs">Duration: {routeInfo.duration}</p>
     </div>
@@ -153,6 +166,7 @@ const MapContent = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedProvince, setSelectedProvince] = useState('');
+  const [travelMode, setTravelMode] = useState<'BICYCLING' | 'DRIVING' | 'TRANSIT' | 'TWO_WHEELER' | 'WALKING'>('DRIVING');
 
   const map = useMap();
 
@@ -309,6 +323,12 @@ const MapContent = () => {
             </AdvancedMarker>
 
             <ShopMarkers places={rankedPlaces} selectedPlace={selectedPlace} onMarkerClick={setSelectedPlace} />
+            <Directions 
+                origin={myLocation} 
+                destination={selectedPlace ? { lat: selectedPlace.latitude, lng: selectedPlace.longitude } : null} 
+                travelMode={travelMode} 
+                setTravelMode={setTravelMode}
+              />
           </Map>
 
           <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black/80 to-transparent md:hidden pointer-events-none"></div>
