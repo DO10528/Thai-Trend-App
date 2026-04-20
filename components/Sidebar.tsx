@@ -50,6 +50,7 @@ interface SidebarProps {
   setSelectedProvince: (val: string) => void;
   rankedPlaces: RankedShop[];
   selectedPlace: RankedShop | null;
+  isLoading?: boolean;
   handleCheckout: () => void;
   handleLogout: () => void;
   handleLogin: () => void;
@@ -66,6 +67,7 @@ export default function Sidebar({
   setSelectedProvince,
   rankedPlaces,
   selectedPlace,
+  isLoading = false,
   handleCheckout,
   handleLogout,
   handleLogin,
@@ -169,8 +171,13 @@ export default function Sidebar({
             {searchQuery && <div className="text-[10px] text-neon-cyan bg-neon-cyan/10 px-2 py-0.5 rounded-full">{rankedPlaces.length} MATCHES</div>}
           </div>
           
-          {rankedPlaces.length === 0 ? (
-            <div className="text-center py-10 opacity-50 text-sm">No spots found.</div>
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-10 gap-3 opacity-70">
+              <div className="w-8 h-8 border-4 border-neon-cyan border-t-transparent rounded-full animate-spin"></div>
+              <div className="text-xs font-mono text-neon-cyan">SYNCING DATA...</div>
+            </div>
+          ) : rankedPlaces.length === 0 ? (
+            <div className="text-center py-10 opacity-50 text-sm">一致するお店が見つかりませんでした。</div>
           ) : (
             rankedPlaces.map((place, i) => {
               const isSelected = selectedPlace?.id === place.id;

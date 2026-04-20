@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef, ReactNode } from 'react';
-import { APIProvider, Map, AdvancedMarker, Pin, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
+import { APIProvider, Map, AdvancedMarker, Pin, useMap, useMapsLibrary, InfoWindow } from '@vis.gl/react-google-maps';
 import { supabase } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
 import Sidebar, { Shop, RankedShop, PROVINCES } from '@/components/Sidebar';
@@ -173,24 +173,37 @@ const MapContent = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedProvince, setSelectedProvince] = useState('');
   const [travelMode, setTravelMode] = useState<'BICYCLING' | 'DRIVING' | 'TRANSIT' | 'TWO_WHEELER' | 'WALKING'>('DRIVING');
+  const [isLoading, setIsLoading] = useState(false);
 
   const map = useMap();
 
   const fetchSupabaseShops = async (query?: string, categoryFilter?: string): Promise<Shop[]> => {
     try {
-      if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-        throw new Error('Supabase Configuration Missing');
+      setIsLoading(true);
+      setErrorToast(null);
+
+      // Verify Supabase URL exists and is valid format
+      const supaUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (!supaUrl || !supaUrl.startsWith('http')) {
+        throw new Error('Supabase Configuration Missing or Invalid URL');
       }
+
       let sbQuery = supabase.from('shops').select('*');
       if (query && query.trim()) {
         const q = `%${query.trim()}%`;
-        sbQuery = sbQuery.or(`name.ilike.${q},category.ilike.${q},tags.ilike.${q}`);
+        sbQuery = sbQuery.or(`name.ilike.${q},category.ilike.${q},description.ilike.${q},tags.ilike.${q}`);
       }
       if (categoryFilter) {
         sbQuery = sbQuery.eq('category', categoryFilter);
       }
+      
       const { data, error } = await sbQuery;
-      if (error) throw new Error(error.message);
+      
+      if (error) {
+        console.error('Supabase fetch error:', error);
+        throw new Error(error.message);
+      }
+      
       if (!data) return [];
   
       return data.map((shop) => ({
@@ -209,8 +222,15 @@ const MapContent = () => {
         }
       }));
     } catch (err: unknown) {
-      if (err instanceof Error) setErrorToast(`Data Sync Error: ${err.message}`);
+      console.error('Data Sync Error:', err);
+      if (err instanceof Error) {
+        setErrorToast(`Data Sync Error: ${err.message}`);
+      } else {
+        setErrorToast(`Data Sync Error: Unknown error occurred`);
+      }
       return [];
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -309,7 +329,10 @@ const MapContent = () => {
           handleLogin={handleLogin}
           onPlaceClick={(place) => {
             setSelectedPlace(place);
-            if (map) map.panTo({ lat: place.latitude, lng: place.longitude });
+            if (map) {
+              map.panTo({ lat: place.latitude, lng: place.longitude });
+              map.setZoom(15);
+            }
           }}
         />
 
@@ -329,6 +352,24 @@ const MapContent = () => {
             </AdvancedMarker>
 
             <ShopMarkers places={rankedPlaces} selectedPlace={selectedPlace} onMarkerClick={setSelectedPlace} />
+            
+            {selectedPlace && (
+              <InfoWindow
+                position={selectedPlace.geometry.location}
+                onCloseClick={() => setSelectedPlace(null)}
+                headerContent={<div className="font-bold text-black">{selectedPlace.name}</div>}
+              >
+                <div className="text-black p-1 max-w-[200px]">
+                  <p className="text-xs mb-1 text-gray-600">{selectedPlace.category}</p>
+                  <p className="text-xs mb-2 line-clamp-2">{selectedPlace.description}</p>
+                  <div className="flex justify-between items-center text-xs font-bold mt-2">
+                    <span className="text-pink-600">{Math.floor(selectedPlace.finalScore)} PWR</span>
+                    <span className="text-blue-600">{selectedPlace.distanceKm.toFixed(1)} km</span>
+                  </div>
+                </div>
+              </InfoWindow>
+            )}
+
             <Directions 
                 origin={myLocation} 
                 destination={selectedPlace ? { lat: selectedPlace.latitude, lng: selectedPlace.longitude } : null} 
