@@ -244,6 +244,20 @@ const MapContent = () => {
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setUser(session?.user ?? null));
+
+    // --- TEST SUPABASE CONNECTION ---
+    const testConnection = async () => {
+      console.log('Testing Supabase connection...');
+      const { data, error } = await supabase.from('shops').select('*').limit(1);
+      if (error) {
+        console.error('Supabase connection test failed:', error);
+      } else {
+        console.log('Supabase connection test successful! Found 1 shop:', data);
+      }
+    };
+    testConnection();
+    // --------------------------------
+
     return () => subscription.unsubscribe();
   }, []);
 
