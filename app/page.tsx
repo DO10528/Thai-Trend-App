@@ -352,12 +352,23 @@ export default function Home() {
     setIsMounted(true);
   }, []);
 
-  const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string;
+  const API_KEY = (process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '').trim();
 
   if (!isMounted) {
     return (
       <main className="h-[100dvh] w-full bg-black flex items-center justify-center text-white">
         <div className="animate-pulse text-neon-cyan font-bold tracking-widest text-xl">INITIALIZING SECURE LINK...</div>
+      </main>
+    );
+  }
+
+  // Prevent APIProvider from crashing if key is invalid/missing
+  if (!API_KEY || API_KEY === 'YOUR_API_KEY' || API_KEY.length < 20) {
+    return (
+      <main className="h-[100dvh] w-full bg-black flex items-center justify-center text-white">
+        <EnvCheck>
+          <></>
+        </EnvCheck>
       </main>
     );
   }
